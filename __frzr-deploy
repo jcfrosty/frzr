@@ -2,7 +2,6 @@
 
 set -e
 set -o pipefail
-
 get_img_url() {
     CHANNEL=$1
 
@@ -145,13 +144,16 @@ main() {
 		exit 1
 	fi
 	
+	
+	#This is where the online installation takes place
+if [ ${offline_installer} == "False" ] || [ -z ${first_install} ]; then
 	REPO=$(echo "${SOURCE}" | cut -f 1 -d ':')
 	CHANNEL=$(echo "${SOURCE}" | cut -f 2 -d ':')
 	
 	RELEASES_URL="https://api.github.com/repos/${REPO}/releases"
 	
 	IMG_URL=$(curl -L -s "${RELEASES_URL}" | get_img_url "${CHANNEL}")
-	
+
 	if [ -z "$IMG_URL" ] || [ "$IMG_URL" == "null" ]; then
 		echo "No matching source found"
 		if curl -L -s "${RELEASES_URL}" | grep "rate limit" > /dev/null; then
@@ -159,20 +161,16 @@ main() {
 			exit 29
 		fi
 		exit 1
-	fi
-	
+        fi
+        
 	FILE_NAME=$(basename ${IMG_URL})
-	NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
+	export NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
 	BASE_URL=$(dirname "${IMG_URL}")
 	CHECKSUM=$(curl -L -s "${BASE_URL}/sha256sum.txt" | cut -f -1 -d ' ')
 	SUBVOL="${DEPLOY_PATH}/${NAME}"
 	IMG_FILE="${MOUNT_PATH}/${FILE_NAME}"
-	
-	if [ -e ${SUBVOL} ]; then
-		echo "${NAME} already installed; aborting"
-		exit
-	fi
-	
+
+		
 	if [ -z ${SHOW_UI} ]; then
 		echo "downloading ${NAME}..."
 		curl -L -o "${IMG_FILE}" -C - "${IMG_URL}"
@@ -188,6 +186,45 @@ main() {
 		echo "checksum does not match; aborting"
 		exit 1
 	fi
+fi
+	
+	#This is where an offline installation takes place
+if [  ${offline_installer} == "True" ]; then
+	device_list=()
+	device_output=`lsblk --list -n -o name,model,size,type | grep disk | tr -s ' ' '\t'`
+
+while read -r line; do
+	name=/dev/`echo "$line" | cut -f 1`
+	model=`echo "$line" | cut -f 2`
+	size=`echo "$line" | cut -f 3`
+	device_list+=($name)
+	device_list+=("$model ($size)")
+done <<< "$device_output"
+
+DISK=$(whiptail --nocancel --menu "Select the disk that has the install image." 20 50 5 "${device_list[@]}" 3>&1 1>&2 2>&3)
+
+mkdir tmp_source
+mount -o rw $DISK /root/tmp_source
+	FILE_NAME=$(basename /root/tmp_source/*.img.tar.xz*)	
+	export NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
+	SUBVOL="${DEPLOY_PATH}/${NAME}"
+	IMG_FILE="/root/tmp_source/${FILE_NAME}"
+	#CHECKSUM="/source/sha256sum.txt" | cut -f -1 -d ' '
+	#CHECKSUM2=`sha256sum "${IMG_FILE}" | cut -d' ' -f 1`
+	
+	#if [ "$CHECKSUM" != "$CHECKSUM2" ]; then
+	  # rm -f "${IMG_FILE}"
+	   #echo "checksum does not match; aborting"
+	  # exit 1
+	#fi
+
+fi
+	
+	if [ -e ${SUBVOL} ]; then
+		echo "${NAME} already installed; aborting"
+		exit
+	fi
+
 	
 	if [ -z ${SHOW_UI} ]; then
 		echo "installing ${NAME}..."
