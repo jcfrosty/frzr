@@ -190,6 +190,7 @@ fi
 	
 	#This is where an offline installation takes place
 if [  ${offline_installer} == "True" ]; then
+
 	device_list=()
 	device_output=`lsblk --list -n -o name,model,size,type | grep disk | tr -s ' ' '\t'`
 
@@ -201,12 +202,12 @@ while read -r line; do
 	device_list+=("$model ($size)")
 done <<< "$device_output"
 
-DISK=$(whiptail --nocancel --menu "Select the disk that has the install image." 20 50 5 "${device_list[@]}" 3>&1 1>&2 2>&3)
+	DISK=$(whiptail --nocancel --menu "Select the disk that has the install image." 20 50 5 "${device_list[@]}" 3>&1 1>&2 2>&3)
 
 mkdir tmp_source
 mount -o rw $DISK /root/tmp_source
 	FILE_NAME=$(basename /root/tmp_source/*.img.tar.xz*)	
-	export NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
+	NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
 	SUBVOL="${DEPLOY_PATH}/${NAME}"
 	IMG_FILE="/root/tmp_source/${FILE_NAME}"
 	#CHECKSUM="/source/sha256sum.txt" | cut -f -1 -d ' '
