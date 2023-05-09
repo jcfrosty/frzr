@@ -136,6 +136,7 @@ main() {
 	fi
 
 	DEPLOY_PATH=${MOUNT_PATH}/deployments
+	echo "DEBUG:DEPLOY_PATH=$DEPLOY_PATH"
 	mkdir -p ${DEPLOY_PATH}
 	
 	BOOT_CFG="${MOUNT_PATH}/boot/loader/entries/frzr.conf"
@@ -151,8 +152,11 @@ main() {
 
 		if [ ! -z ${TO_DELETE} ]; then
 			echo "deleting ${TO_DELETE}..."
-			btrfs subvolume delete ${DEPLOY_PATH}/${TO_DELETE} || true
-			rm -rf ${MOUNT_PATH}/boot/${TO_DELETE}
+			#btrfs subvolume delete ${DEPLOY_PATH}/${TO_DELETE} || true
+			echo "Skipping deleting subvolumes to handle it by hand"
+			echo "DEBUG:btrfs subvolume delete ${DEPLOY_PATH}/${TO_DELETE}
+			#rm -rf ${MOUNT_PATH}/boot/${TO_DELETE}
+			echo "DEBUG:${MOUNT_PATH}/boot/${TO_DELETE}
 		fi
 	fi
 
@@ -243,10 +247,14 @@ main() {
 		whiptail --infobox "Extracting and installing system image (${NAME}). This may take some time." 10 50
 	fi
 
-	if [[ "${IMG_FILE##*.}" == "img" ]]; then
-		btrfs receive --quiet ${DEPLOY_PATH} < ${IMG_FILE}
+	if [[ -d ${SUBVOL} ]]; then
+		echo "DEBUG:${SUBVOL} already exists, skipping deployment"
 	else
-		tar xfO ${IMG_FILE} | btrfs receive --quiet ${DEPLOY_PATH}
+		if [[ "${IMG_FILE##*.}" == "img" ]]; then
+			btrfs receive --quiet ${DEPLOY_PATH} < ${IMG_FILE}
+		else
+			tar xfO ${IMG_FILE} | btrfs receive --quiet ${DEPLOY_PATH}
+		fi
 	fi
 	
 	mkdir -p ${MOUNT_PATH}/boot/${NAME}
@@ -272,11 +280,11 @@ main() {
 
 	get_boot_cfg "${NAME}" "${AMD_UCODE}" "${INTEL_UCODE}" "${ADDITIONAL_ARGUMENTS}" > ${BOOT_CFG}
 	echo "default frzr.conf" > ${MOUNT_PATH}/boot/loader/loader.conf
-
-	rm -f ${MOUNT_PATH}/*.img.*
-
-	rm -rf /var/lib/pacman # undo frzr-unlock
-
+	echo "DEBUG:rm -rf $MOUNT_PATH/*.img* skipped"
+	#rm -f ${MOUNT_PATH}/*.img.*
+	
+	echo "DEBUG:rm -rf /var/lib/pacman skipped"
+	#rm -rf /var/lib/pacman # undo frzr-unlock
 
 	# Check if there are migrations available
 	if compgen -G "${SUBVOL}"/usr/lib/frzr.d/*.migration > /dev/null ; then
@@ -292,13 +300,18 @@ main() {
 	fi
 	
 	# Check if initramfs needs to be rebuilt for a device quirk
+	echo "DEBUG:MOUNT_PATH=${MOUNT_PATH}, BOOT_CFG=${BOOT_CFG}, NAME=${NAME}, SUBVOL=${SUBVOL}"
 	frzr-initramfs
 	
 	echo "deployment complete; restart to boot into ${NAME}"
-
-	umount -R ${MOUNT_PATH}
+	echo "DEBUG: Do you want to unmount the path? Yes/No"
+	read choice
+	if [[ ${choice} == "Yes" ]];then
+		umount -R ${MOUNT_PATH}
+	else
+		echo "DEBUG:Mount_PATH not unmounted
+	fi
 }
-
 
 if [ "$0" = "$BASH_SOURCE" ] ; then
 	main "$@"
