@@ -309,7 +309,7 @@ main() {
 	if [[ ${choice} == "Yes" ]];then
 		umount -R ${MOUNT_PATH}
 	else
-		echo "DEBUG:Mount_PATH not unmounted
+		echo "DEBUG:Mount_PATH not unmounted"
 	fi
 }
 
