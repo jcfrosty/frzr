@@ -4,7 +4,8 @@ if [ $EUID -ne 0 ]; then
 	echo "$(basename $0) must be run as root"
 	exit 1
 fi
-
+export SUBVOL=/tmp/frzr_root/deployments/chimeraos*/
+export MOUNT_PATH=/tmp/frzr_root/
 # If the script is being ran directly we will need to set the paths
 if [ -z "${SUBVOL}" ]; then
 	if [ -d /tmp/frzr_root ]; then
