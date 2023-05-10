@@ -117,7 +117,7 @@ main() {
 	# keep only the first param as source
 	FRZR_SOURCE="${FRZR_PARAMS%% *}"
 
-	MOUNT_PATH=/frzr_root
+	export MOUNT_PATH=/frzr_root
 
 	if ! mountpoint -q ${MOUNT_PATH}; then
 		MOUNT_PATH=/tmp/frzr_root
@@ -135,11 +135,11 @@ main() {
 		sleep 5
 	fi
 
-	DEPLOY_PATH=${MOUNT_PATH}/deployments
+	export DEPLOY_PATH=${MOUNT_PATH}/deployments
 	echo "DEBUG:DEPLOY_PATH=$DEPLOY_PATH"
 	mkdir -p ${DEPLOY_PATH}
 	
-	BOOT_CFG="${MOUNT_PATH}/boot/loader/entries/frzr.conf"
+	export BOOT_CFG="${MOUNT_PATH}/boot/loader/entries/frzr.conf"
 	mkdir -p ${MOUNT_PATH}/boot/loader/entries
 
 	# delete deployments under these conditions:
@@ -205,10 +205,10 @@ main() {
 		fi
 
 		FILE_NAME=$(basename ${IMG_URL})
-		NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
+		export NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
 		BASE_URL=$(dirname "${IMG_URL}")
 		CHECKSUM=$(curl --http1.1 -L -s "${BASE_URL}/sha256sum.txt" | cut -f -1 -d ' ')
-		SUBVOL="${DEPLOY_PATH}/${NAME}"
+		export SUBVOL="${DEPLOY_PATH}/${NAME}"
 		IMG_FILE="${MOUNT_PATH}/${FILE_NAME}"
 		
 		if [ -e ${SUBVOL} ]; then
