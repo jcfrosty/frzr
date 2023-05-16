@@ -27,11 +27,14 @@ if [ -e ${SUBVOL}/usr/share/device-quirks/id-device ]; then
     ${SUBVOL}/usr/share/device-quirks/id-device
     RESULT=$?
     # If we don't see what were looking for in the new image, then check the current system as the last resort
-    elif [ -e "/etc/device-quirks/id-device" ]; then
+elif [ -e "/etc/device-quirks/id-device" ]; then
     /etc/device-quirks/id-device
     RESULT=$?
-    # This will happen if the device quirks package is not installed, exit gracefully
+elif [ -e "/etc/frzr-userscripts/user-tweaks.sh" ]; then
+    # Users can set up configuration scripts at /etc/frzr-userscripts/ to automate their own tools if desired
+    /etc/frzr-userscripts/user-tweaks.sh
 else
-    echo "Unable to run id-device to determine if quirks need to be applied"
+    # Exit gracefully if no tweaks or quirks were found
+    echo "There appear to be no tweaks to be applied"
     exit 0
 fi
